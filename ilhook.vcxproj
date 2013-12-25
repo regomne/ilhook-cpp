@@ -75,10 +75,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="asmhelper.cpp" />
-    <ClCompile Include="hookml.cpp" />
+    <ClCompile Include="ilhook.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="hookml.h" />
+    <ClInclude Include="ilhook.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

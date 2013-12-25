@@ -21,12 +21,12 @@
     <ClCompile Include="asmhelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hookml.cpp">
+    <ClCompile Include="ilhook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="hookml.h">
+    <ClInclude Include="ilhook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
