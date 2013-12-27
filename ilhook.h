@@ -11,29 +11,37 @@ enum PatchType
     PT_Any,
 };
 
-struct CodePattern
+class CodePattern
 {
-    BYTE pattern[MAX_PATCH_LENGTH];
-    BYTE mask[MAX_PATCH_LENGTH];
+public:
+    BYTE* pattern;
+    BYTE* mask;
     DWORD length;
 };
 
-struct HookObject
+//use class only to extend struct
+class CodePatternFix:public CodePattern
+{
+public:
+	BYTE _pat[MAX_PATCH_LENGTH];
+	BYTE _mask[MAX_PATCH_LENGTH];
+};
+
+struct HookSrcObject
 {
     void* addr;
     PatchType type;
-    CodePattern pattern;
+    CodePatternFix pattern;
 };
 
-typedef struct CodePattern* PCodePattern;
-typedef struct HookObject* PHookObject;
 
-bool InitializeHookObjectFromAddr(PHookObject obj,BYTE* addr,int minLength);
-bool InitializePattern(PCodePattern pattern,BYTE* code,BYTE* mask,DWORD len);
 
-bool IsPatternMatch(PCodePattern pat1,PCodePattern pat2);
+bool InitializeHookSrcObject(HookSrcObject* obj,BYTE* addr);
+bool InitializePattern(CodePattern* pattern,BYTE* code,BYTE* mask,DWORD len);
 
-bool Hook(PHookObject obj,PCodePattern pre,void* newFunc,char* funcArgs);
+bool IsPatternMatch(BYTE* buff,CodePattern* pat);
+
+bool Hook(HookSrcObject* obj,CodePattern* pre,void* newFunc,char* funcArgs);
 
 //in asmhelper.cpp
 
