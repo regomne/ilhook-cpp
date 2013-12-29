@@ -26,7 +26,7 @@ struct CodePattern
 public:
     BYTE* pattern;
     BYTE* mask;
-    DWORD length;
+    int length;
 };
 
 struct HookSrcObject
@@ -35,13 +35,18 @@ struct HookSrcObject
     PatchType type;
     CodePattern pattern;
 
-	//relocation for stolen code of jmp and call
-	int relocPosition;
-	void* relocDestAddr;
+	struct Instruction
+	{
+		BYTE offset;
+		BYTE length;
+		WORD jmpType;
+		void* destAddr;
+	};
+	Instruction insts[5];
+	int instCount;
 
 	//for CodePattern
 	BYTE _pat[MAX_PATCH_LENGTH];
-	BYTE _msk[MAX_PATCH_LENGTH];
 };
 
 struct HookStubObject
@@ -52,20 +57,48 @@ struct HookStubObject
 	int retnVal;
 };
 
-bool InitializeHookSrcObject(HookSrcObject* obj,BYTE* addr,int maxPatchLength=-1);
+struct Registers
+{
+	DWORD edi;
+	DWORD esi;
+	DWORD ebp;
+	DWORD esp;
+	DWORD ebx;
+	DWORD edx;
+	DWORD ecx;
+	DWORD eax;
+};
+
+bool InitializeHookSrcObject(HookSrcObject* obj,void* addr,bool forceAny=false);
 bool InitializePattern(CodePattern* pattern,BYTE* code,BYTE* mask,DWORD len);
-bool InitializeStubObject(HookStubObject* obj,void* addr,int length,StubOptions options=(StubOptions)0,int retvVal=0);
+bool InitializeStubObject(HookStubObject* obj,void* addr,int length,int retvVal=0,StubOptions options=(StubOptions)0);
 
 bool CalcOriAddress(HookSrcObject* obj, void** addr);
 bool IsPatternMatch(void* buff,CodePattern* pat);
 
-bool PatchMemory(void* addr,CodePattern* pre);
 bool PatchHookSrc(HookSrcObject* srcObj,void* destAddr);
+bool GenerateMovedCode(HookSrcObject* srcObj,BYTE* destAddr,int* length);
 bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,char* funcArgs);
 
 bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void* newFunc,char* funcArgs);
 
 //in asmhelper.cpp
 
-bool GetOpInfo(BYTE* addr,int* opLength,bool* isJmpOrCall);
+bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr);
+
+/*
+*  seq:
+*  a -- eax
+*  b -- ebx
+*  c -- ecx
+*  d -- edx
+*  w -- esp
+*  x -- ebp
+*  y -- esi
+*  z -- edi
+*  1-9 and A-Z -- parameter 1 to 35
+*  \x01-\x1f -- parameter ref 1 to 31
+*  f -- orignal function pointer
+*  r -- pointer to Registers struct
+*/
 bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr);

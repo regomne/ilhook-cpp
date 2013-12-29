@@ -63,16 +63,10 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 		//write the stolen code
 		if(srcObj->type==PT_ANY)
 		{
-			TEST_BUFF(srcObj->pattern.length);
-			memcpy(pst,srcObj->pattern.pattern,srcObj->pattern.length);
-
-			//relocate jmp or call op
-			if(srcObj->relocPosition!=-1)
-			{
-				*(DWORD*)(pst+srcObj->relocPosition)=
-					(BYTE*)srcObj->relocDestAddr-(pst+srcObj->relocPosition+4);
-			}
-			pst+=srcObj->pattern.length;
+			int len=pstend-pst;
+			if(!GenerateMovedCode(srcObj,pst,&len))
+				return false;
+			pst+=len;
 		}
 
 		TEST_BUFF(5);
@@ -80,6 +74,190 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 		*(DWORD*)(pst+1)=oriFunc-(pst+5);
 		pst+=5;
 	}
+	return true;
+}
+
+bool GenerateMovedCode(HookSrcObject* srcObj,BYTE* destAddr,int* length)
+{
+	BYTE* p=destAddr;
+	BYTE* pend=p+*length;
+
+	HookSrcObject::Instruction* inst=srcObj->insts;
+	for(int i=0;i<srcObj->instCount;i++)
+	{
+		if(inst[i].jmpType)
+		{
+			if(p+6>pend)
+			{
+				SetLastError(ERROR_INSUFFICIENT_BUFFER);
+				return false;
+			}
+			BYTE tp1=inst[i].jmpType&0xff;
+			if(tp1==0xeb || tp1==0xe9)
+				*p++=0xe9;
+			else if(tp1==0xe8)
+				*p++=0xe8;
+			else if((tp1 & 0xf0)==0x70)
+			{
+				*p++=0xf;
+				*p++=0x80 | (inst[i].jmpType & 0xf);
+			}
+			else
+			{
+				*p++=tp1;
+				*p++=(inst[i].jmpType>>8);
+			}
+			*(DWORD*)p=(BYTE*)inst[i].destAddr-(p+4);
+			p+=4;
+		}
+		else
+		{
+			if(p+inst[i].length>pend)
+			{
+				SetLastError(ERROR_INSUFFICIENT_BUFFER);
+				return false;
+			}
+			memcpy(p,srcObj->pattern.pattern+inst[i].offset,inst[i].length);
+			p+=inst[i].length;
+		}
+	}
+	*length=p-destAddr;
+	return true;
+}
+
+bool IsPatternMatch(void* buff,CodePattern* pat)
+{
+	BYTE* p=(BYTE*)buff;
+	for(int i=0;i<pat->length;i++)
+	{
+		if(!(pat->mask) || pat->mask[i])
+			if(p[i]!=pat->pattern[i])
+				return false;
+	}
+	return true;
+}
+
+bool CalcOriAddress(HookSrcObject* obj, void** addr)
+{
+	switch(obj->type)
+	{
+	case PT_CALL:
+		*(BYTE**)addr=(BYTE*)obj->addr+5+*(DWORD*)&obj->pattern.pattern[1];
+		break;
+	case PT_WIN32API:
+		*(BYTE**)addr=(BYTE*)obj->addr+2;
+		break;
+	case PT_ANY:
+		*(BYTE**)addr=(BYTE*)obj->addr+obj->pattern.length;
+		break;
+	}
+	return true;
+}
+
+bool PatchHookSrc(HookSrcObject* srcObj,void* destAddr)
+{
+	switch(srcObj->type)
+	{
+	case PT_CALL:
+		if(*(BYTE*)srcObj->addr!=0xe8)
+		{
+			SetLastError(ERROR_BAD_ENVIRONMENT);
+			return false;
+		}
+		*(DWORD*)((BYTE*)srcObj->addr+1)=(BYTE*)destAddr-((BYTE*)srcObj->addr+5);
+		break;
+	case PT_WIN32API:
+		if(*(WORD*)srcObj->addr!=0xff8b)
+		{
+			SetLastError(ERROR_BAD_ENVIRONMENT);
+			return false;
+		}
+		*(WORD*)srcObj->addr=0xf9eb; //jmp $-5
+		*((BYTE*)srcObj->addr-5)=0xe9; //jmp
+		*(DWORD*)((BYTE*)srcObj->addr-4)=(BYTE*)destAddr-(BYTE*)srcObj->addr;
+		break;
+	case PT_ANY:
+		*(BYTE*)srcObj->addr=0xe9; //jmp
+		*(DWORD*)((BYTE*)srcObj->addr+1)=(BYTE*)destAddr-((BYTE*)srcObj->addr+5);
+		break;
+	}
+	return true;
+}
+
+bool InitializeHookSrcObject(HookSrcObject* obj,void* addr,bool forceAny/* =false */)
+{
+	PatchType pt=PT_ANY;
+	BYTE* p=(BYTE*)addr;
+
+	if(!forceAny)
+	{
+		if(*p==0xe8)
+			pt=PT_CALL;
+		else if(*(WORD*)p==0xff8b && *(DWORD*)(p-5)==0x90909090 && p[-1]==0x90)
+			pt=PT_WIN32API;
+	}
+
+	obj->type=pt;
+	obj->addr=addr;
+	
+	switch(obj->type)
+	{
+	case PT_CALL:
+		obj->instCount=0;
+		memcpy(obj->_pat,addr,5);
+		InitializePattern(&obj->pattern,obj->_pat,0,5);
+		break;
+	case PT_WIN32API:
+		obj->instCount=0;
+		memcpy(obj->_pat,addr,2);
+		InitializePattern(&obj->pattern,obj->_pat,0,2);
+		break;
+	case PT_ANY:
+		{
+			int curOff=0;
+			int opLen;
+			void* destAddr;
+			HookSrcObject::Instruction* inst=obj->insts;
+			while(curOff<5)
+			{
+				destAddr=0;
+				if(!GetOpInfo(p+curOff,&opLen,&destAddr))
+				{
+					SetLastError(ERROR_INVALID_DATA);
+					return false;
+				}
+				inst->offset=(BYTE)curOff;
+				inst->length=(BYTE)opLen;
+				inst->jmpType=destAddr? *(WORD*)&p[curOff]:0;
+				inst->destAddr=destAddr;
+
+				inst++;
+				curOff+=opLen;
+			}
+			obj->instCount=inst-obj->insts;
+			memcpy(obj->_pat,p,curOff);
+			InitializePattern(&obj->pattern,obj->_pat,0,curOff);
+		}
+		break;
+	}
+	return true;
+}
+
+bool InitializePattern(CodePattern* pattern,BYTE* code,BYTE* mask,DWORD len)
+{
+	pattern->pattern=code;
+	pattern->mask=mask;
+	pattern->length=len;
+	return true;
+}
+
+bool InitializeStubObject(HookStubObject* obj,void* addr,int length,int retval,StubOptions options)
+{
+	obj->addr=addr;
+	obj->length=length;
+	obj->options=options;
+	obj->retnVal=retval;
+	return true;
 }
 
 bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void* newFunc,char* funcArgs)
@@ -88,6 +266,10 @@ bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void*
 		return false;
 
 	if(!GenerateStub(srcObj,stubObj,newFunc,funcArgs))
+		return false;
+
+	DWORD oldProt;
+	if(!VirtualProtect(srcObj->addr,5,PAGE_EXECUTE_READWRITE,&oldProt))
 		return false;
 
 	if(!PatchHookSrc(srcObj,stubObj->addr))
