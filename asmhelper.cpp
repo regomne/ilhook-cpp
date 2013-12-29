@@ -333,6 +333,7 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr)
 			//push [ebp+XX]
 			*(WORD*)p=0x75ff;
 			*(p+2)=0x24+ctrl*4;
+			p+=3;
 		}
 		else
 		{

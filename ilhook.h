@@ -15,10 +15,10 @@ enum PatchType
 enum StubOptions
 {
 	//directly return after newFunc called. if not set, jmp to source function.
-	STUB_USERETN=1,
+	STUB_DIRECTLYRETURN=1,
 
 	//set eax after newFunc called.
-	STUB_NEEDRETURNVALUE=(1<<1),
+	STUB_OVERRIDEEAX=(1<<1),
 };
 
 struct CodePattern
@@ -71,7 +71,7 @@ struct Registers
 
 bool InitializeHookSrcObject(HookSrcObject* obj,void* addr,bool forceAny=false);
 bool InitializePattern(CodePattern* pattern,BYTE* code,BYTE* mask,DWORD len);
-bool InitializeStubObject(HookStubObject* obj,void* addr,int length,int retvVal=0,StubOptions options=(StubOptions)0);
+bool InitializeStubObject(HookStubObject* obj,void* addr,int length,int retvVal=0,DWORD options=0);
 
 bool CalcOriAddress(HookSrcObject* obj, void** addr);
 bool IsPatternMatch(void* buff,CodePattern* pat);

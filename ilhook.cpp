@@ -43,7 +43,7 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 	TEST_BUFF(1);
 	*pst++=0x61; //popad
 
-	if(stubObj->options & STUB_USERETN)
+	if(stubObj->options & STUB_DIRECTRETURN)
 	{
 		TEST_BUFF(3);
 		if(stubObj->retnVal==0)
@@ -55,7 +55,7 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 			pst+=3;
 		}
 	}
-	if(!(stubObj->options & STUB_USERETN) || newOriFuncPtr)
+	if(!(stubObj->options & STUB_DIRECTRETURN) || newOriFuncPtr)
 	{
 		if(newOriFuncPtr)
 			*newOriFuncPtr=(DWORD)pst;
@@ -251,11 +251,11 @@ bool InitializePattern(CodePattern* pattern,BYTE* code,BYTE* mask,DWORD len)
 	return true;
 }
 
-bool InitializeStubObject(HookStubObject* obj,void* addr,int length,int retval,StubOptions options)
+bool InitializeStubObject(HookStubObject* obj,void* addr,int length,int retval,DWORD options)
 {
 	obj->addr=addr;
 	obj->length=length;
-	obj->options=options;
+	obj->options=(StubOptions)options;
 	obj->retnVal=retval;
 	return true;
 }
