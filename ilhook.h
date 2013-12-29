@@ -96,8 +96,8 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr);
 *  x -- ebp
 *  y -- esi
 *  z -- edi
-*  1-9 and A-Z -- parameter 1 to 35
-*  \x01-\x1f -- parameter ref 1 to 31
+*  1-9 and A-M -- parameter 1 to 22
+*  \x01-\x16 -- parameter ref 1 to 22
 *  f -- orignal function pointer
 *  r -- pointer to Registers struct
 */

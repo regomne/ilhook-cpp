@@ -298,5 +298,93 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 
 bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr)
 {
+	BYTE* p=addr;
+	BYTE* pend=p+*length;
 
+#define TEST_BUFF(cnt) if(p+(cnt)>pend) {SetLastError(ERROR_INSUFFICIENT_BUFFER);return false;}
+
+	TEST_BUFF(2);
+	*(WORD*)p=0xec8b; //mov ebp,esp
+	p+=2;
+
+	char* ps=seq+strlen(seq)-1;
+
+	while(ps>=seq)
+	{
+		char ctrl=*ps--;
+		if(ctrl>=1 && ctrl<=0x16)
+		{
+			TEST_BUFF(4);
+			//lea eax,[ebp+XX]
+			//push eax
+			*(WORD*)p=0x458d;
+			*(p+2)=0x24+(ctrl-1)*4;
+			*(p+3)=0x50;
+			p+=4;
+		}
+		else if((ctrl>='1' && ctrl<='9') || (ctrl>='A' && ctrl<='M'))
+		{
+			if(ctrl<='9')
+				ctrl-='1';
+			else
+				ctrl-='A'-10;
+
+			TEST_BUFF(3);
+			//push [ebp+XX]
+			*(WORD*)p=0x75ff;
+			*(p+2)=0x24+ctrl*4;
+		}
+		else
+		{
+			TEST_BUFF(5);
+			switch(ctrl)
+			{
+			case 'a':
+				*(WORD*)p=0x75ff; //push [ebp+1c]
+				*(p+2)=0x1c;
+				p+=3;
+				break;
+			case 'b':
+				*p++=0x53;
+				break;
+			case 'c':
+				*p++=0x51;
+				break;
+			case 'd':
+				*p++=0x52;
+				break;
+			case 'w':
+				*(WORD*)p=0x75ff; //push [ebp+0c]
+				*(p+2)=0xc;
+				p+=3;
+				break;
+			case 'x':
+				*(WORD*)p=0x75ff; //push [ebp+8]
+				*(p+2)=0x8;
+				p+=3;
+				break;
+			case 'y':
+				*p++=0x56;
+				break;
+			case 'z':
+				*p++=0x57;
+				break;
+			case 'f':
+				if(!oriFuncAddr)
+				{
+					SetLastError(ERROR_INVALID_PARAMETER);
+					return false;
+				}
+				*p++=0x68; //push XXXXXXXX
+				*oriFuncAddr=(DWORD*)p;
+				p+=4;
+				break;
+			case 'r':
+				*p++=0x55; //push ebp
+				break;
+			}
+		}
+	}
+	*length=p-addr;
+	return true;
 }
