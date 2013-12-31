@@ -34,7 +34,7 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 	*(DWORD*)(pst+1)=(BYTE*)newFunc-(pst+5);
 	pst+=5;
 
-	if(stubObj->options & STUB_NEEDRETURNVALUE)
+	if(stubObj->options & STUB_OVERRIDEEAX)
 	{
 		TEST_BUFF(4);
 		*(DWORD*)pst=0x1c244489; //mov [esp+1ch],eax
@@ -43,7 +43,7 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 	TEST_BUFF(1);
 	*pst++=0x61; //popad
 
-	if(stubObj->options & STUB_DIRECTRETURN)
+	if(stubObj->options & STUB_DIRECTLYRETURN)
 	{
 		TEST_BUFF(3);
 		if(stubObj->retnVal==0)
@@ -55,7 +55,7 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 			pst+=3;
 		}
 	}
-	if(!(stubObj->options & STUB_DIRECTRETURN) || newOriFuncPtr)
+	if(!(stubObj->options & STUB_DIRECTLYRETURN) || newOriFuncPtr)
 	{
 		if(newOriFuncPtr)
 			*newOriFuncPtr=(DWORD)pst;
