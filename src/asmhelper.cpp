@@ -327,7 +327,7 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr)
 			if(ctrl<='9')
 				ctrl-='1';
 			else
-				ctrl-='A'-10;
+				ctrl-='A'-9;
 
 			TEST_BUFF(3);
 			//push [ebp+XX]
