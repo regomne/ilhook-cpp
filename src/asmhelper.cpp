@@ -1,5 +1,9 @@
 
 #include <windows.h>
+
+#define BEA_ENGINE_STATIC
+//#define BEA_USE_STDCALL
+#include <BeaEngine.h>
 #include "ilhook.h"
 
 static unsigned long MaskTable[518]={
@@ -136,6 +140,17 @@ static unsigned long MaskTable[518]={
 };
 
 int GetOpCodeSize32(void* Start)
+{
+    DISASM dis;
+    memset(&dis, 0, sizeof(dis));
+    dis.EIP = (UIntPtr)Start;
+    int len = Disasm(&dis);
+    if (len > 0)
+        return len;
+    return -1;
+}
+
+int GetOpCodeSize32Old(void* Start)
 {
 	DWORD* Tlb=(DWORD*)MaskTable;
 	PBYTE pOPCode;
