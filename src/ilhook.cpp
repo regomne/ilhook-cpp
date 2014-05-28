@@ -24,7 +24,7 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 	if(funcArgs)
 	{
 		int length=pstend-pst;
-		if(!GeneratePushInsts(funcArgs,pst,&length,&newOriFuncPtr))
+		if(!GeneratePushInsts(funcArgs,pst,&length,&newOriFuncPtr,(DWORD)srcObj->addr))
 			return false;
 		pst+=length;
 	}

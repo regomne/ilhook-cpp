@@ -100,5 +100,6 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr);
 *  \x01-\x16 -- parameter ref 1 to 22
 *  f -- orignal function pointer
 *  r -- pointer to Registers struct
+*  s -- pointer of hook source address
 */
-bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr);
+bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr,DWORD srcAddr);

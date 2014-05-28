@@ -311,7 +311,7 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 	return true;
 }
 
-bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr)
+bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWORD srcAddr)
 {
 	BYTE* p=addr;
 	BYTE* pend=p+*length;
@@ -398,6 +398,11 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr)
 			case 'r':
 				*p++=0x55; //push ebp
 				break;
+            case 's':
+                *p++ = 0x68;
+                *(DWORD*)p = srcAddr;
+                p += 4;
+                break;
 			}
 		}
 	}
