@@ -283,6 +283,7 @@ int GetOpCodeSize32(void* Start)
 
 	return OpCodeSize;
 }
+*/
 
 bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 {
@@ -313,7 +314,7 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 
 	return true;
 }
-*/
+
 
 bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWORD srcAddr)
 {
