@@ -3,9 +3,10 @@
 
 #define BEA_ENGINE_STATIC
 //#define BEA_USE_STDCALL
-#include <BeaEngine.h>
+#include <beaengine/BeaEngine.h>
 #include "ilhook.h"
 
+/*
 static unsigned long MaskTable[518]={
 	0x00004000, 0x00004000, 0x00004000, 0x00004000,
 	0x00008000, 0x00008000, 0x00000000, 0x00000000,
@@ -138,6 +139,7 @@ static unsigned long MaskTable[518]={
 	0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
 	0xFFFFFFFF, 0xFFFFFFFF
 };
+*/
 
 int GetOpCodeSize32(void* Start)
 {
@@ -150,7 +152,8 @@ int GetOpCodeSize32(void* Start)
     return -1;
 }
 
-int GetOpCodeSize32Old(void* Start)
+/*
+int GetOpCodeSize32(void* Start)
 {
 	DWORD* Tlb=(DWORD*)MaskTable;
 	PBYTE pOPCode;
@@ -310,6 +313,7 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 
 	return true;
 }
+*/
 
 bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWORD srcAddr)
 {
