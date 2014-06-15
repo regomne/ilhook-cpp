@@ -18,8 +18,9 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 
 #define TEST_BUFF(cnt) if(pst+(cnt)>pstend) {SetLastError(ERROR_INSUFFICIENT_BUFFER);return false;}
 
-	TEST_BUFF(6);
+	TEST_BUFF(10);
 	*pst++=0x60; //pushad
+    *pst++=0x9c; //pushfd
 
 	if(funcArgs)
 	{
@@ -34,13 +35,23 @@ bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,ch
 	*(DWORD*)(pst+1)=(BYTE*)newFunc-(pst+5);
 	pst+=5;
 
+    int argCnt=funcArgs?strlen(funcArgs):0;
+    if(argCnt!=0)
+    {
+        //add esp,XX
+        *(WORD*)pst=0xc483;
+        *(pst+2)=argCnt*4;
+        pst+=3;
+    }
+
 	if(stubObj->options & STUB_OVERRIDEEAX)
 	{
 		TEST_BUFF(4);
-		*(DWORD*)pst=0x1c244489; //mov [esp+1ch],eax
+		*(DWORD*)pst=0x20244489; //mov [esp+20h],eax
 		pst+=4;
 	}
-	TEST_BUFF(1);
+	TEST_BUFF(2);
+    *pst++=0x9d; //popfd
 	*pst++=0x61; //popad
 
 	if(stubObj->options & STUB_DIRECTLYRETURN)
@@ -233,6 +244,11 @@ bool InitializeHookSrcObject(HookSrcObject* obj,void* addr,bool forceAny/* =fals
 
 				inst++;
 				curOff+=opLen;
+                if(curOff>MAX_PATCH_LENGTH)
+                {
+                    SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                    return false;
+                }
 			}
 			obj->instCount=inst-obj->insts;
 			memcpy(obj->_pat,p,curOff);
@@ -276,4 +292,10 @@ bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void*
 		return false;
 
 	return true;
+}
+
+bool UnHook32(HookSrcObject* srcObj)
+{
+    memcpy(srcObj->addr,srcObj->pattern.pattern,srcObj->pattern.length);
+    return true;
 }

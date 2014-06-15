@@ -288,6 +288,9 @@ int GetOpCodeSize32(void* Start)
 bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 {
 	*opLength=GetOpCodeSize32(addr);
+    if(*opLength==-1)
+        return false;
+
 	BYTE* p=addr;
 	bool isJmp=false;
 	int dist=0;
@@ -338,7 +341,7 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWO
 			//lea eax,[ebp+XX]
 			//push eax
 			*(WORD*)p=0x458d;
-			*(p+2)=0x24+(ctrl-1)*4;
+			*(p+2)=0x28+(ctrl-1)*4;
 			*(p+3)=0x50;
 			p+=4;
 		}
@@ -352,7 +355,7 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWO
 			TEST_BUFF(3);
 			//push [ebp+XX]
 			*(WORD*)p=0x75ff;
-			*(p+2)=0x24+ctrl*4;
+			*(p+2)=0x28+ctrl*4;
 			p+=3;
 		}
 		else
@@ -361,8 +364,8 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWO
 			switch(ctrl)
 			{
 			case 'a':
-				*(WORD*)p=0x75ff; //push [ebp+1c]
-				*(p+2)=0x1c;
+				*(WORD*)p=0x75ff; //push [ebp+20]
+				*(p+2)=0x20;
 				p+=3;
 				break;
 			case 'b':
@@ -375,13 +378,13 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWO
 				*p++=0x52;
 				break;
 			case 'w':
-				*(WORD*)p=0x75ff; //push [ebp+0c]
-				*(p+2)=0xc;
+				*(WORD*)p=0x75ff; //push [ebp+10]
+				*(p+2)=0x10;
 				p+=3;
 				break;
 			case 'x':
-				*(WORD*)p=0x75ff; //push [ebp+8]
-				*(p+2)=0x8;
+				*(WORD*)p=0x75ff; //push [ebp+c]
+				*(p+2)=0xc;
 				p+=3;
 				break;
 			case 'y':

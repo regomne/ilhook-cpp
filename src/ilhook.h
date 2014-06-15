@@ -4,6 +4,7 @@
 
 #define MAX_PATCH_LENGTH 0x20
 
+#define HOOKFUNC __cdecl
 
 enum PatchType
 {
@@ -59,6 +60,7 @@ struct HookStubObject
 
 struct Registers
 {
+    DWORD eflags;
 	DWORD edi;
 	DWORD esi;
 	DWORD ebp;
@@ -81,6 +83,7 @@ bool GenerateMovedCode(HookSrcObject* srcObj,BYTE* destAddr,int* length);
 bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,char* funcArgs);
 
 bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void* newFunc,char* funcArgs);
+bool UnHook32(HookSrcObject* srcObj);
 
 //in asmhelper.cpp
 
