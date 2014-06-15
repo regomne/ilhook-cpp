@@ -48,6 +48,12 @@ struct HookSrcObject
 
 	//for CodePattern
 	BYTE _pat[MAX_PATCH_LENGTH];
+
+    HookSrcObject& operator=(HookSrcObject& that)
+    {
+        memcpy(this,&that,sizeof(HookSrcObject));
+        pattern.pattern=_pat;
+    }
 };
 
 struct HookStubObject
