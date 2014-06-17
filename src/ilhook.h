@@ -48,11 +48,22 @@ struct HookSrcObject
 
 	//for CodePattern
 	BYTE _pat[MAX_PATCH_LENGTH];
+    
+    HookSrcObject()
+    {
 
-    HookSrcObject& operator=(HookSrcObject& that)
+    }
+
+    explicit HookSrcObject(const HookSrcObject& that)
+    {
+        *this = that;
+    }
+
+    HookSrcObject& operator=(const HookSrcObject& that)
     {
         memcpy(this,&that,sizeof(HookSrcObject));
         pattern.pattern=_pat;
+        return *this;
     }
 };
 
